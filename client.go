@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/DataDog/datadog-go/statsd"
 	"github.com/seabird-chat/seabird-go"
@@ -34,6 +35,16 @@ func NewSeabirdClient(seabirdCoreURL, seabirdCoreToken, dogstatsdEndpoint string
 	}, nil
 }
 
+func countWords(s string) int64 {
+	words := strings.Fields(s)
+	var sum int64
+	sum = 0
+	for range words {
+		sum += 1
+	}
+	return sum
+}
+
 func (c *SeabirdClient) close() error {
 	return c.Client.Close()
 }
@@ -50,6 +61,9 @@ func (c *SeabirdClient) messageCallback(event *pb.MessageEvent) {
 	}
 	// TODO: This assumes max of 1 message per second per user.
 	c.datadogClient.Count("seabird.message", 1, tags, 1)
+	c.datadogClient.Count("seabird.message.words", countWords(event.Text), tags, 1)
+	c.datadogClient.Count("seabird.message.characters", int64(len(event.Text)), tags, 1)
+
 }
 
 // Run runs
