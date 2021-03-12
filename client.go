@@ -45,6 +45,88 @@ func countWords(s string) int64 {
 	return sum
 }
 
+func isAttack(s string) bool {
+	violentWords := []string{
+		"slaps",
+		"beats",
+		"smacks",
+		"hits",
+	}
+	for _, attack := range violentWords {
+		if strings.Contains(s, attack) {
+			return true
+		}
+	}
+	return false
+}
+
+func parseFight(s string) (attacker, victim string) {
+	return "", ""
+}
+
+func isFoul(s string) bool {
+	foulWords := []string{
+		"ass",
+		"fuck",
+		"bitch",
+		"shit",
+		"scheisse",
+		"scheiße",
+		"kacke",
+		"arsch",
+		"ficker",
+		"ficken",
+		"schlampe",
+	}
+
+	for _, swear := range foulWords {
+		if strings.Contains(s, swear) {
+			return true
+		}
+	}
+	return false
+}
+
+func isShout(s string) bool {
+	if s[len(s):] == "!" {
+		return true
+	}
+	return false
+}
+
+func isQuestion(s string) bool {
+	if strings.Contains(s, "?") {
+		return true
+	}
+	return false
+}
+
+func isHappy(s string) bool {
+	happiness := []string{
+		":)",
+		"(:",
+	}
+	for _, happy := range happiness {
+		if strings.Contains(s, happy) {
+			return true
+		}
+	}
+	return false
+}
+
+func isSad(s string) bool {
+	sadness := []string{
+		":(",
+		"):",
+	}
+	for _, sad := range sadness {
+		if strings.Contains(s, sad) {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *SeabirdClient) close() error {
 	return c.Client.Close()
 }
@@ -63,6 +145,24 @@ func (c *SeabirdClient) messageCallback(event *pb.MessageEvent) {
 	c.datadogClient.Count("seabird.message", 1, tags, 1)
 	c.datadogClient.Count("seabird.message.words", countWords(event.Text), tags, 1)
 	c.datadogClient.Count("seabird.message.characters", int64(len(event.Text)), tags, 1)
+	if isAttack(event.Text) {
+		c.datadogClient.Count("seabird.message.attack", 1, tags, 1)
+	}
+	if isFoul(event.Text) {
+		c.datadogClient.Count("seabird.message.swear", 1, tags, 1)
+	}
+	if isShout(event.Text) {
+		c.datadogClient.Count("seabird.message.shout", 1, tags, 1)
+	}
+	if isQuestion(event.Text) {
+		c.datadogClient.Count("seabird.message.question", 1, tags, 1)
+	}
+	if isHappy(event.Text) {
+		c.datadogClient.Count("seabird.message.happy", 1, tags, 1)
+	}
+	if isSad(event.Text) {
+		c.datadogClient.Count("seabird.message.sad", 1, tags, 1)
+	}
 
 }
 
