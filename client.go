@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/url"
 	"strings"
 
 	"github.com/DataDog/datadog-go/statsd"
@@ -24,14 +25,14 @@ func NewSeabirdClient(seabirdCoreURL, seabirdCoreToken, dogstatsdEndpoint string
 		return nil, err
 	}
 
-	dogstatsd_client, err := statsd.New(dogstatsdEndpoint)
+	dogstatsdClient, err := statsd.New(dogstatsdEndpoint)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	return &SeabirdClient{
 		Client:        seabirdClient,
-		datadogClient: dogstatsd_client,
+		datadogClient: dogstatsdClient,
 	}, nil
 }
 
@@ -40,46 +41,13 @@ func countWords(s string) int64 {
 	var sum int64
 	sum = 0
 	for range words {
-		sum += 1
+		sum++
 	}
 	return sum
 }
 
-func isAttack(s string) bool {
-	violentWords := []string{
-		"slaps",
-		"beats",
-		"smacks",
-		"hits",
-	}
-	for _, attack := range violentWords {
-		if strings.Contains(s, attack) {
-			return true
-		}
-	}
-	return false
-}
-
-func parseFight(s string) (attacker, victim string) {
-	return "", ""
-}
-
 func isFoul(s string) bool {
-	foulWords := []string{
-		"ass",
-		"fuck",
-		"bitch",
-		"shit",
-		"scheisse",
-		"scheiße",
-		"kacke",
-		"arsch",
-		"ficker",
-		"ficken",
-		"schlampe",
-	}
-
-	for _, swear := range foulWords {
+	for _, swear := range Swears() {
 		if strings.Contains(s, swear) {
 			return true
 		}
@@ -133,9 +101,14 @@ func (c *SeabirdClient) close() error {
 
 func (c *SeabirdClient) messageCallback(event *pb.MessageEvent) {
 	log.Printf("Processing event: %s %s", event.Source, event.Text)
-	channelTag := fmt.Sprintf("channel:%s", event.Source.ChannelId)
+
+	// channel and user appear to be query escaped so, undo that
+	cleanedChannel, _ := url.QueryUnescape(event.Source.ChannelId)
+	channelTag := fmt.Sprintf("channel:%s", cleanedChannel)
+	cleanedUser, _ := url.QueryUnescape(event.Source.User.Id)
+	userTag := fmt.Sprintf("user:%s", cleanedUser)
+
 	displayNameTag := fmt.Sprintf("display_name:%s", event.Source.User.DisplayName)
-	userTag := fmt.Sprintf("user:%s", event.Source.User.Id)
 	tags := []string{
 		channelTag,
 		displayNameTag,
@@ -145,9 +118,6 @@ func (c *SeabirdClient) messageCallback(event *pb.MessageEvent) {
 	c.datadogClient.Count("seabird.message", 1, tags, 1)
 	c.datadogClient.Count("seabird.message.words", countWords(event.Text), tags, 1)
 	c.datadogClient.Count("seabird.message.characters", int64(len(event.Text)), tags, 1)
-	if isAttack(event.Text) {
-		c.datadogClient.Count("seabird.message.attack", 1, tags, 1)
-	}
 	if isFoul(event.Text) {
 		c.datadogClient.Count("seabird.message.swear", 1, tags, 1)
 	}
@@ -166,6 +136,57 @@ func (c *SeabirdClient) messageCallback(event *pb.MessageEvent) {
 
 }
 
+func isAttack(s string) bool {
+	violentWords := []string{
+		"slaps",
+		"beats",
+		"smacks",
+		"hits",
+	}
+	for _, attack := range violentWords {
+		if strings.Contains(s, attack) {
+			return true
+		}
+	}
+	return false
+}
+
+func parseFight(s string) (attacker, victim string) {
+	words := strings.Fields(s)
+	attacker = words[0]
+	victim = words[2]
+	return attacker, victim
+}
+
+func (c *SeabirdClient) actionCallback(action *pb.ActionEvent) {
+	log.Printf("Processing event: %s %s", action.Source, action.Text)
+
+	// channel and user appear to be query escaped so, undo that
+	cleanedChannel, _ := url.QueryUnescape(action.Source.ChannelId)
+	channelTag := fmt.Sprintf("channel:%s", cleanedChannel)
+	cleanedUser, _ := url.QueryUnescape(action.Source.User.Id)
+	userTag := fmt.Sprintf("user:%s", cleanedUser)
+
+	displayNameTag := fmt.Sprintf("display_name:%s", action.Source.User.DisplayName)
+	tags := []string{
+		channelTag,
+		displayNameTag,
+		userTag,
+	}
+
+	c.datadogClient.Count("seabird.message", 1, tags, 1)
+	c.datadogClient.Count("seabird.message.words", countWords(action.Text), tags, 1)
+	c.datadogClient.Count("seabird.message.characters", int64(len(action.Text)), tags, 1)
+	if isAttack(action.Text) {
+		attacker, victim := parseFight(action.Text)
+		attackerTag := fmt.Sprintf("attacker:%s", attacker)
+		victimTag := fmt.Sprintf("victim:%s", victim)
+		tags = append(tags, attackerTag, victimTag)
+		c.datadogClient.Count("seabird.message.attack", 1, tags, 1)
+	}
+
+}
+
 // Run runs
 func (c *SeabirdClient) Run() error {
 	events, err := c.StreamEvents(map[string]*pb.CommandMetadata{})
@@ -178,6 +199,8 @@ func (c *SeabirdClient) Run() error {
 		switch v := event.GetInner().(type) {
 		case *pb.Event_Message:
 			go c.messageCallback(v.Message)
+		case *pb.Event_Action:
+			go c.actionCallback(v.Action)
 		}
 	}
 	return errors.New("event stream closed")
