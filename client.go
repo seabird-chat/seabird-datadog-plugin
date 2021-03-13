@@ -174,7 +174,7 @@ func isConsume(s string) bool {
 
 func parseConsume(text string) (food string) {
 	words := strings.Fields(text)
-	food = strings.Join(words[:1], " ")
+	food = strings.Join(words[1:], " ")
 	return food
 }
 
