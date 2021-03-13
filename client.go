@@ -151,11 +151,34 @@ func isAttack(s string) bool {
 	return false
 }
 
-func parseFight(s string) (attacker, victim string) {
-	words := strings.Fields(s)
-	attacker = words[0]
-	victim = words[2]
+func parseFight(user, text string) (attacker, victim string) {
+	attacker = user
+	words := strings.Fields(text)
+	victim = words[1]
 	return attacker, victim
+}
+
+func isConsume(s string) bool {
+	consumeWords := []string{
+		"sips",
+		"chugs",
+		"gulps",
+		"eats",
+		"swallows",
+		"devours",
+	}
+	for _, consume := range consumeWords {
+		if strings.Contains(s, consume) {
+			return true
+		}
+	}
+	return false
+}
+
+func parseConsume(text string) (food string) {
+	words := strings.Fields(text)
+	food = strings.Join(words[:1], " ")
+	return food
 }
 
 func (c *SeabirdClient) actionCallback(action *pb.ActionEvent) {
@@ -177,12 +200,16 @@ func (c *SeabirdClient) actionCallback(action *pb.ActionEvent) {
 	c.datadogClient.Count("seabird.message", 1, tags, 1)
 	c.datadogClient.Count("seabird.message.words", countWords(action.Text), tags, 1)
 	c.datadogClient.Count("seabird.message.characters", int64(len(action.Text)), tags, 1)
+	c.datadogClient.Count("seabird.message.action", 1, tags, 1)
 	if isAttack(action.Text) {
-		attacker, victim := parseFight(action.Text)
+		attacker, victim := parseFight(action.Source.User.DisplayName, action.Text)
 		attackerTag := fmt.Sprintf("attacker:%s", attacker)
 		victimTag := fmt.Sprintf("victim:%s", victim)
 		tags = append(tags, attackerTag, victimTag)
 		c.datadogClient.Count("seabird.message.attack", 1, tags, 1)
+	}
+	if isConsume(action.Text) {
+		c.datadogClient.Count("seabird.message.consume", 1, tags, 1)
 	}
 
 }
