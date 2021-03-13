@@ -209,6 +209,9 @@ func (c *SeabirdClient) actionCallback(action *pb.ActionEvent) {
 		c.datadogClient.Count("seabird.message.attack", 1, tags, 1)
 	}
 	if isConsume(action.Text) {
+		food := parseConsume(action.Text)
+		foodTag := fmt.Sprintf("food:%s", food)
+		tags = append(tags, foodTag)
 		c.datadogClient.Count("seabird.message.consume", 1, tags, 1)
 	}
 
