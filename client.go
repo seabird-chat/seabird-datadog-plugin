@@ -100,8 +100,6 @@ func (c *SeabirdClient) close() error {
 }
 
 func (c *SeabirdClient) messageCallback(event *pb.MessageEvent) {
-	log.Printf("Processing event: %s %s", event.Source, event.Text)
-
 	// channel and user appear to be query escaped so, undo that
 	cleanedChannel, _ := url.QueryUnescape(event.Source.ChannelId)
 	channelTag := fmt.Sprintf("channel:%s", cleanedChannel)
@@ -133,7 +131,6 @@ func (c *SeabirdClient) messageCallback(event *pb.MessageEvent) {
 	if isSad(event.Text) {
 		c.datadogClient.Count("seabird.message.sad", 1, tags, 1)
 	}
-
 }
 
 func isAttack(s string) bool {
@@ -182,8 +179,6 @@ func parseConsume(text string) (food string) {
 }
 
 func (c *SeabirdClient) actionCallback(action *pb.ActionEvent) {
-	log.Printf("Processing event: %s %s", action.Source, action.Text)
-
 	// channel and user appear to be query escaped so, undo that
 	cleanedChannel, _ := url.QueryUnescape(action.Source.ChannelId)
 	channelTag := fmt.Sprintf("channel:%s", cleanedChannel)
