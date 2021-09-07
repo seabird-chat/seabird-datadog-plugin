@@ -8,5 +8,6 @@ pipeline:
   publish:
     image: plugins/docker
     repo: seabirdchat/seabird-datadog-plugin
+    secrets: [ docker_username, docker_password ]
     when:
       branch: main
