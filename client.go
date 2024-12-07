@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/DataDog/datadog-go/statsd"
+	"github.com/DataDog/datadog-go/v5/statsd"
 	"github.com/seabird-chat/seabird-go"
 	"github.com/seabird-chat/seabird-go/pb"
 )
