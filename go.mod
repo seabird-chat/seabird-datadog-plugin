@@ -2,8 +2,6 @@ module github.com/seabird-chat/seabird-datadog-plugin
 
 go 1.24.0
 
-toolchain go1.24.0
-
 require (
 	github.com/DataDog/datadog-go/v5 v5.6.0
 	github.com/joho/godotenv v1.5.1
