@@ -14,7 +14,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
-	golang.org/x/net v0.35.0 // indirect
+	golang.org/x/net v0.36.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250219182151-9fdb1cabc7b2 // indirect
