@@ -3,7 +3,7 @@ module github.com/seabird-chat/seabird-datadog-plugin
 go 1.24.0
 
 require (
-	github.com/DataDog/datadog-go/v5 v5.7.1
+	github.com/DataDog/datadog-go/v5 v5.8.2
 	github.com/joho/godotenv v1.5.1
 	github.com/mattn/go-isatty v0.0.20
 	github.com/rs/zerolog v1.34.0
