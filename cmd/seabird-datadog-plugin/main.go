@@ -4,16 +4,12 @@ import (
 	"log"
 	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/mattn/go-isatty"
 	"github.com/rs/zerolog"
 	datadogPlugin "github.com/seabird-chat/seabird-datadog-plugin"
 )
 
 func main() {
-	// Attempt to load from .env if it exists
-	_ = godotenv.Load()
-
 	var logger zerolog.Logger
 
 	if isatty.IsTerminal(os.Stdout.Fd()) {
